@@ -20,20 +20,21 @@ def getData(url):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find all elements with the specified attribute value
-    #soupCarNames = soup.find_all(attrs={'data-webm-clickvalue': 'sv-title'})
-    #carNames = [element.get_text() for element in soupCarNames] #Variable cleaning
+    soupCarNames = soup.find_all(attrs={'data-webm-clickvalue': 'sv-title'})
+    carNames = [element.get_text() for element in soupCarNames] #Variable cleaning
     
     return soup
 
 def getNextPage(soup):
     page = soup.find('ul', {'class': 'pagination'})
+    
 
-    if not page.find('a', {'class': 'next disabled'}):
+    if not page.find('a', {'class': 'page-link next disabled'}):
         href = page.find('a', {'class': 'next'}).get('href')
         urlNew = 'https://www.chileautos.cl' + href
         return urlNew
     else:
-        return None
+        return 
 
 while True:
     soup = getData(url)
@@ -41,4 +42,3 @@ while True:
     if not url:
         break
     
-
