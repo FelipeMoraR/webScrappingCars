@@ -11,12 +11,22 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 url = 'https://www.chileautos.cl/vehiculos/autos-vehículo/usado-tipo/nissan/sentra/'
 
+arrayCars = []
+
 car_data = {
     'Car Name': [],
     'Prices': [],
     'Mileage': [],
+    'FuelEconomy': []
 }
 
+def cleanData(data):
+    if data:
+        cleanData = data.get_text().strip()
+    else:
+        cleanData = 'Null'
+    
+    return cleanData
 
 def getData(url):
     headers = {
@@ -26,23 +36,31 @@ def getData(url):
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Obtener datos de coches
-    carNames = [element.get_text().strip() for element in soup.find_all(attrs={'data-webm-clickvalue': 'sv-title'})]
-    carPrices = [price.get_text().strip() for price in soup.find_all(attrs={'data-webm-clickvalue': 'sv-price'})]
-    carMileage = [mileage.get_text().strip() for mileage in soup.find_all(attrs={'data-type': 'Odometer'})]
+    #carCard = soup.find_all(attrs={'class':'listing-item card showcase'})
+    carCard = soup.select(".listing-item.card.showcase, .listing-item.card.standard")
 
-    return carNames, carPrices, carMileage, soup
+    for car in carCard:
+        dataCarContainer = car.find(attrs = {'class':'card-body'})
 
 
-def equalize_lengths(*args):
-    # Obtener la longitud máxima
-    max_len = max(map(len, args))
-    
-    # Rellenar listas más cortas con "N/A"
-    for lst in args:
-        while len(lst) < max_len:
-            lst.append("N/A")
+        titleElement = dataCarContainer.find(attrs = {'data-webm-clickvalue': 'sv-title'})
+        titleCar = cleanData(titleElement)
 
+
+        priceElement = dataCarContainer.find(attrs={'data-webm-clickvalue': 'sv-price'})
+        priceCar = cleanData(priceElement)
+
+
+        mileageElement = dataCarContainer.find(attrs={'data-type': 'Odometer'})
+        mileageCar = cleanData(mileageElement)
+
+
+        fuelEconomyElement = dataCarContainer.find(attrs = {'data-type': 'Fuel Economy'})
+        fuelEconomyCar = cleanData(fuelEconomyElement)
+
+        arrayCars.append([titleCar, priceCar, mileageCar, fuelEconomyCar])
+
+    return soup
 
 def getNextPage(soup):
     page = soup.find('ul', {'class': 'pagination'})
@@ -54,19 +72,16 @@ def getNextPage(soup):
         return None
 
 while True:
-    carNames, carPrices, carMileage, soup = getData(url)
-
-   
-    equalize_lengths(carNames, carPrices, carMileage)
-
-    # Agregar datos a car_data
-    car_data['Car Name'].extend(carNames)
-    car_data['Prices'].extend(carPrices)
-    car_data['Mileage'].extend(carMileage)
-
+    soup = getData(url)
     url = getNextPage(soup)
     if not url:
         break
+
+for car in arrayCars:
+    car_data['Car Name'].append(car[0])
+    car_data['Prices'].append(car[1])
+    car_data['Mileage'].append(car[2])
+    car_data['FuelEconomy'].append(car[3])
 
 
 df = pd.DataFrame(car_data)
